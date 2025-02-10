@@ -421,14 +421,16 @@ main (int argc, char *argv[])
   pleRng->SetAttribute("Min", DoubleValue(2.0)); // Minimum PLE
   pleRng->SetAttribute("Max", DoubleValue(6.0)); // Maximum PLE
   badChannelModel = CreateObject<LogDistancePropagationLossModel>();
-  badChannelModel->SetAttribute("Exponent", DoubleValue(4.0)); // Higher path loss exponent
   //
-  Ptr<ThreeGppUmiStreetCanyonPropagationLossModel> goodChannelModel = CreateObject<ThreeGppUmiStreetCanyonPropagationLossModel>();						 //
+						 //
   Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
   //mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmiStreetCanyonPropagationLossModel");
   //mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmiStreetCanyonChannelConditionModel");
+  Ptr<ThreeGppUmiStreetCanyonPropagationLossModel> goodChannelModel = CreateObject<ThreeGppUmiStreetCanyonPropagationLossModel>();
 
-  
+  // Bad channel model for Group 2
+ 
+  badChannelModel->SetAttribute("Exponent", DoubleValue(4.0)); // Higher path loss exponent
   //
   Simulator::Schedule(Seconds(0.2), &UpdatePLE); // Start updating PLE after 1 second
   //
@@ -437,7 +439,7 @@ main (int argc, char *argv[])
 
   uint8_t nMmWaveEnbNodes = 4;
   uint8_t nLteEnbNodes = 1;
-  uint32_t ues = 12;
+  uint32_t ues = 3;
   uint8_t nUeNodes = ues * nMmWaveEnbNodes;
 
   NS_LOG_INFO (" Bandwidth " << bandwidth << " centerFrequency " << double (centerFrequency)
@@ -482,7 +484,7 @@ main (int argc, char *argv[])
   NodeContainer ueGroup2;
 
   for (uint32_t i = 0; i < ueNodes.GetN(); ++i) {
-      if (i < 24) {
+      if (i < 6) {
           ueGroup1.Add(ueNodes.Get(i)); // First 6 UEs in Group 1
       } else {
           ueGroup2.Add(ueNodes.Get(i)); // Remaining 6 UEs in Group 2
@@ -705,4 +707,3 @@ for (uint32_t i = 0; i < clientApp.GetN(); ++i) {
   NS_LOG_INFO ("Done.");
   return 0;
 }
-

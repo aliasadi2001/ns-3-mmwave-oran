@@ -111,12 +111,7 @@ public:
   void ControlMessageReceivedCallback (E2AP_PDU_t* sub_req_pdu);
   
   void SetStartTime (uint64_t);
-  //
-  //
-  void SetCurrentPLE(double ple);
-  //
-  void SetThpBitrateThreshold(double thpBitrateThreshold);
-  //
+
 protected:
   virtual void DoInitialize (void) override;
   void UpdateConfig ();
@@ -168,8 +163,6 @@ private:
   uint64_t m_startTime;
   std::map<uint64_t, uint32_t> m_drbThrDlPdcpBasedComputationUeid;
   std::map<uint64_t, uint32_t> m_drbThrDlUeid;
-
-  double m_currentPLE;
   bool m_isReportingEnabled; //! true is KPM reporting cycle is active, false otherwise
   bool m_reducedPmValues; //< if true use a reduced subset of pmvalues
 
@@ -177,12 +170,9 @@ private:
 
   bool m_forceE2FileLogging; //< if true log PMs to files
   double m_sinrThreshold; // SINR threshold for anomaly detectio
-  double m_thpBitrateThreshold; // Bitrate threshold for anomaly detection
-
   std::string m_cuUpFileName;
   std::string m_cuCpFileName;
   std::string m_duFileName;
-  
 
 };
 }

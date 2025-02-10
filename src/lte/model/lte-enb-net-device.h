@@ -235,6 +235,8 @@ private:
   bool m_isConstructed; ///< is constructed?
   bool m_isConfigured; ///< is configured?
 
+private:
+  std::unordered_map<uint64_t, Time> m_ueLastPacketTime; // Add this line
   /**
    * \brief Propagate attributes and configuration to sub-modules.
    *

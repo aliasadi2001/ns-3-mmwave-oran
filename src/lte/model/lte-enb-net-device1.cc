@@ -607,8 +607,6 @@ LteEnbNetDevice::Send (Ptr<Packet> packet, const Address& dest, uint16_t protoco
 void
 LteEnbNetDevice::UpdateConfig (void)
 {
-  // Add to the private section of the LteEnbNetDevice class
-  std::unordered_map<uint64_t, Time> m_ueLastPacketTime; // Tracks last packet time per UE
   NS_LOG_FUNCTION (this);
 
   if (m_isConstructed)
@@ -645,7 +643,7 @@ LteEnbNetDevice::UpdateConfig (void)
                  "DRB.PdcpSduVolumeDl_Filter.UEID (txBytes),"
                  "Tot.PdcpSduNbrDl.UEID (txDlPackets),DRB.PdcpSduBitRateDl.UEID (pdcpThroughput),"
                  "DRB.PdcpSduDelayDl.UEID (pdcpLatency),QosFlow.PdcpPduVolumeDL_Filter.UEID"
-                 "(txPdcpPduBytesNrRlc),DRB.PdcpPduNbrDl.Qos.UEID (txPdcpPduNrRlc),anomality\n";
+                 "(txPdcpPduBytesNrRlc),DRB.PdcpPduNbrDl.Qos.UEID (txPdcpPduNrRlc)\n";
           csv.close();
 
           m_cuCpFileName = "cu-cp-cell-" + std::to_string(m_cellId) + ".txt";
@@ -758,18 +756,6 @@ LteEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
   double perUserAverageLatencySum = 0;
 
   std::unordered_map<uint64_t, std::string> uePmString {};
-  double cellAverageLatency = 0;
-  if (!ueMap.empty())
-  {
-      cellAverageLatency = perUserAverageLatencySum / ueMap.size();
-  }
-
-// Calculate timestamp
-  uint64_t timestamp = m_startTime + (uint64_t)Simulator::Now().GetMilliSeconds();
-
-// Open CSV file
-  std::ofstream csv{};
-  csv.open(m_cuUpFileName.c_str(), std::ios_base::app);
 
   for (auto ue : ueMap)
   {
@@ -806,43 +792,7 @@ LteEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
     perUserAverageLatencySum += pdcpLatency;
 
     double pdcpThroughput = txBytes / m_e2Periodicity; // unit kbps
-    // Calculate anomality
-    auto uePmsIt = uePmString.find(imsi);
-    std::string uePms = (uePmsIt != uePmString.end()) ? uePmsIt->second : "0,0,0,0";
 
-    bool anomality = false;
-    if (txDlPackets > 0)
-    {
-        // UE sent packets: update last packet time
-        m_ueLastPacketTime[imsi] = Simulator::Now();
-    }
-    else
-    {
-        // No packets sent: check time since last packet
-        auto it = m_ueLastPacketTime.find(imsi);
-        if (it != m_ueLastPacketTime.end())
-        {
-            Time timeSinceLast = Simulator::Now() - it->second;
-            if (timeSinceLast.GetMilliSeconds() > 500)
-            {
-                anomality = true;
-            }
-        }
-    }
-
-
-    // Construct CSV line with anomality
-    std::string to_print = std::to_string(timestamp) + "," 
-        + ueImsiComplete + ","
-        + std::to_string(cellAverageLatency) + ","
-        + std::to_string(0) + ","
-        + std::to_string(cellDlTxVolume) + ","
-        + uePms + ",," // Two commas for unused LTE columns (txPdcpPduBytesNrRlc, txPdcpPduNrRlc)
-        + (anomality ? "1" : "0") + "\n"; // Anomality as last column
-
-    csv << to_print;
-
-    //
     NS_LOG_DEBUG(Simulator::Now().GetSeconds() << " " << std::to_string(m_cellId) << " cell, connected UE with IMSI " << imsi 
       << " ueImsiString " << ueImsiComplete
       << " txDlPackets " << txDlPackets 
@@ -866,7 +816,7 @@ LteEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
   }
 
   // get average cell latency
-  //double cellAverageLatency = 0; 
+  double cellAverageLatency = 0; 
   if (!ueMap.empty ())
   {
     cellAverageLatency = perUserAverageLatencySum / ueMap.size();

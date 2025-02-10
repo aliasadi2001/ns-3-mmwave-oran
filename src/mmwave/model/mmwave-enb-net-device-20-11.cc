@@ -188,7 +188,6 @@ MmWaveEnbNetDevice::MmWaveEnbNetDevice ()
     m_reducedPmValues (false),
     m_forceE2FileLogging (false),
     m_sinrThreshold(10.0),
-    m_thpBitrateThreshold(100.0),
     m_cuUpFileName (),
     m_cuCpFileName (),
     m_duFileName ()
@@ -208,11 +207,7 @@ void MmWaveEnbNetDevice::SetCurrentPLE(double ple) {
     m_currentPLE = ple;
 }
 //
-void
-MmWaveEnbNetDevice::SetThpBitrateThreshold(double thpBitrateThreshold)
-{
-  m_thpBitrateThreshold = thpBitrateThreshold;
-}
+//
 //
 void
 MmWaveEnbNetDevice::DoInitialize (void)
@@ -623,11 +618,9 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
     txPdcpPduBytesNrRlc *= 8 / 1e3;
 
     double pdcpLatency = m_e2PdcpStatsCalculator->GetDlDelay(imsi, 3) / 1e5; // unit: x 0.1 ms
-    //double pdcpLatency = m_e2PdcpStatsCalculator->GetDlDelay(imsi, 3) / 1e5; // unit: x 0.1 ms
     perUserAverageLatencySum += pdcpLatency;
 
-    double pdcpThroughput = m_e2PdcpStatsCalculator->GetDlTxData(imsi, 3) * 8 / 1e3; // in kbit, not byte
-   // double pdcpThroughput = txBytes / m_e2Periodicity; // unit kbps
+    double pdcpThroughput = txBytes / m_e2Periodicity; // unit kbps
     double pdcpThroughputRx = rxBytes / m_e2Periodicity; // unit kbps
     
     if (m_drbThrDlPdcpBasedComputationUeid.find (imsi) != m_drbThrDlPdcpBasedComputationUeid.end ())
@@ -664,19 +657,9 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
         indicationMessageHelper->AddCuUpUePmItem (ueImsiComplete, txPdcpPduBytesNrRlc,
                                                   txPdcpPduNrRlc);
       }
-//
-//
-//    double pdcpThroughput = m_e2PdcpStatsCalculator->GetDlTxData(imsi, 3) * 8 / 1e3; // in kbit, not byte
-//    double pdcpLatency = m_e2PdcpStatsCalculator->GetDlDelay(imsi, 3) / 1e5; // unit: x 0.1 ms
 
-    // Calculate the anomaly based on the new definition
-    //int anomaly = (pdcpThroughput < m_thpBitrateThreshold) ? 1 : 0;
-
-    // Log the UE PM data
-   // uePmString.insert(std::make_pair(imsi, ",,,," + std::to_string(pdcpThroughput) + "," + std::to_string(anomaly)));
-//
-//
-    uePmString.insert(std::make_pair(imsi, ",,,," + std::to_string(txPdcpPduBytesNrRlc) + "," + std::to_string(txPdcpPduNrRlc)));
+    uePmString.insert(std::make_pair(imsi, ",,,," + std::to_string(txPdcpPduBytesNrRlc) + "," +
+      std::to_string(txPdcpPduNrRlc)));
   }
 
   if (!indicationMessageHelper->IsOffline ())
@@ -702,7 +685,6 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
       // Tot.PdcpSduNbrDl.UEID (txDlPackets), DRB.PdcpSduBitRateDl.UEID (pdcpThroughput),
       // DRB.PdcpSduDelayDl.UEID (pdcpLatency), QosFlow.PdcpPduVolumeDL_Filter.UEID (txPdcpPduBytesNrRlc),
       // DRB.PdcpPduNbrDl.Qos.UEID (txPdcpPduNrRlc)
-      SetThpBitrateThreshold(100.0);
 
       for (auto ue : ueMap)
         {
@@ -710,15 +692,11 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
           std::string ueImsiComplete = GetImsiString (imsi);
 
           auto uePms = uePmString.find (imsi)->second;
-	  //double pdcpThroughput = m_e2PdcpStatsCalculator->GetDlTxData(imsi, 3) * 8 / 1e3; // in kbit, not byte
-	  int anomaly = (m_drbThrDlUeid [imsi] < 3500) ? 1 : 0;
-
 	  //
-         // double sinrThisCell = 10 * std::log10 (m_l3sinrMap[imsi][m_cellId]);
-         // int anomaly = (sinrThisCell < m_sinrThreshold) ? 1 : 0;
+          double sinrThisCell = 10 * std::log10 (m_l3sinrMap[imsi][m_cellId]);
+          int anomaly = (sinrThisCell < m_sinrThreshold) ? 1 : 0;
           //
-          std::string to_print = std::to_string(timestamp) + "," + ueImsiComplete + "," + "," + "," + "," + uePms + "," + std::to_string(m_currentPLE) + "," + std::to_string(anomaly) + "\n";
-         
+          std::string to_print = std::to_string (timestamp) + "," + ueImsiComplete + "," + "," + "," + "," + uePms + "," + std::to_string(m_currentPLE) + "," + std::to_string(anomaly) + "\n";
 
           csv << to_print;
         }

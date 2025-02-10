@@ -115,7 +115,6 @@ public:
   //
   void SetCurrentPLE(double ple);
   //
-  void SetThpBitrateThreshold(double thpBitrateThreshold);
   //
 protected:
   virtual void DoInitialize (void) override;
@@ -177,8 +176,6 @@ private:
 
   bool m_forceE2FileLogging; //< if true log PMs to files
   double m_sinrThreshold; // SINR threshold for anomaly detectio
-  double m_thpBitrateThreshold; // Bitrate threshold for anomaly detection
-
   std::string m_cuUpFileName;
   std::string m_cuCpFileName;
   std::string m_duFileName;

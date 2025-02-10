@@ -29,7 +29,7 @@
 #include "ns3/mmwave-point-to-point-epc-helper.h"
 #include "ns3/lte-helper.h"
 #include "ns3/random-variable-stream.h"
-#include "ns3/three-gpp-propagation-loss-model.h"
+
 using namespace ns3;
 using namespace mmwave;
 
@@ -39,16 +39,7 @@ using namespace mmwave;
  */
 
 NS_LOG_COMPONENT_DEFINE ("ScenarioZero");
-//
-//
-// Declare these at the top of your scenario-zero.cc file
-Ptr<UniformRandomVariable> pleRng = CreateObject<UniformRandomVariable>();
-//Ptr<LogDistancePropagationLossModel> badChannelModel = CreateObject<LogDistancePropagationLossModel>();
-//
-// Add these after the includes but before any functions
-NodeContainer ueGroup2; // Declare ueGroup2 globally
-Ptr<LogDistancePropagationLossModel> badChannelModel = CreateObject<LogDistancePropagationLossModel>();
-//
+
 void
 PrintGnuplottableUeListToFile (std::string filename)
 {
@@ -149,53 +140,11 @@ void ChangeInterval(Ptr<Application> app, Ptr<UniformRandomVariable> rand) {
     app->SetAttribute("Interval", TimeValue(MicroSeconds(newInterval)));
     Simulator::Schedule(Seconds(1.0), &ChangeInterval, app, rand); // Reschedule every 1 second
 }
-//
-//
-//
-void UpdatePLE() {
-    double newPLE = pleRng->GetValue(); // Get a new PLE value
-     
-     // Update the PLE in the bad channel model if applicable
-    badChannelModel->SetAttribute("Exponent", DoubleValue(newPLE));
- 
-     // Update all eNB devices with the new PLE
-    for (NodeList::Iterator it = NodeList::Begin(); it != NodeList::End(); ++it) {
-        Ptr<Node> node = *it;
-        for (uint32_t i = 0; i < node->GetNDevices(); ++i) {
-            Ptr<MmWaveEnbNetDevice> enbDev = node->GetDevice(i)->GetObject<MmWaveEnbNetDevice>();
-            if (enbDev) {
-                enbDev->SetCurrentPLE(newPLE); // Set the new PLE in the eNB device
-            }
-        }
-    }
- 
-     // Schedule the next PLE update
-    Simulator::Schedule(Seconds(0.2), &UpdatePLE);
-}
- ////
- //void UpdatePLE() {
- //    double newPLE = pleRng->GetValue(); // Get a new PLE value
- //
- //    // Update PLE for Group 2 UEs
- //    for (uint32_t i = 0; i < ueGroup2.GetN(); ++i) {
- //        Ptr<Node> ueNode = ueGroup2.Get(i);
- //        if (ueNode->GetNDevices() > 0) {
- //            Ptr<MmWaveUeNetDevice> ueDevice = ueNode->GetDevice(0)->GetObject<MmWaveUeNetDevice>();
- //            if (ueDevice) {
- //                // Assuming you have a way to access the channel model
- //                // Here we directly update the bad channel model
- //                badChannelModel->SetAttribute("Exponent", DoubleValue(newPLE));
- //            }
- //        }
- //    }
- //
- //    // Schedule the next PLE update
- //    Simulator::Schedule(Seconds(1.0), &UpdatePLE);
- //}
+
 //
 //
 static ns3::GlobalValue g_bufferSize ("bufferSize", "RLC tx buffer size (MB)",
-                                      ns3::UintegerValue (10),
+                                      ns3::UintegerValue (100),
                                       ns3::MakeUintegerChecker<uint32_t> ());
 
 static ns3::GlobalValue g_enableTraces ("enableTraces", "If true, generate ns-3 traces",
@@ -413,31 +362,16 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWavePhyMacCommon::Bandwidth", DoubleValue (bandwidth));
   Config::SetDefault ("ns3::MmWavePhyMacCommon::CenterFreq", DoubleValue (centerFrequency));
 
-  //
-  ////
-  ////
-  //
-  pleRng = CreateObject<UniformRandomVariable>();  
-  pleRng->SetAttribute("Min", DoubleValue(2.0)); // Minimum PLE
-  pleRng->SetAttribute("Max", DoubleValue(6.0)); // Maximum PLE
-  badChannelModel = CreateObject<LogDistancePropagationLossModel>();
-  badChannelModel->SetAttribute("Exponent", DoubleValue(4.0)); // Higher path loss exponent
-  //
-  Ptr<ThreeGppUmiStreetCanyonPropagationLossModel> goodChannelModel = CreateObject<ThreeGppUmiStreetCanyonPropagationLossModel>();						 //
   Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
-  //mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmiStreetCanyonPropagationLossModel");
-  //mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmiStreetCanyonChannelConditionModel");
+  mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmiStreetCanyonPropagationLossModel");
+  mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmiStreetCanyonChannelConditionModel");
 
-  
-  //
-  Simulator::Schedule(Seconds(0.2), &UpdatePLE); // Start updating PLE after 1 second
-  //
   Ptr<MmWavePointToPointEpcHelper> epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
   mmwaveHelper->SetEpcHelper (epcHelper);
 
   uint8_t nMmWaveEnbNodes = 4;
   uint8_t nLteEnbNodes = 1;
-  uint32_t ues = 12;
+  uint32_t ues = 3;
   uint8_t nUeNodes = ues * nMmWaveEnbNodes;
 
   NS_LOG_INFO (" Bandwidth " << bandwidth << " centerFrequency " << double (centerFrequency)
@@ -482,56 +416,13 @@ main (int argc, char *argv[])
   NodeContainer ueGroup2;
 
   for (uint32_t i = 0; i < ueNodes.GetN(); ++i) {
-      if (i < 24) {
+      if (i < 6) {
           ueGroup1.Add(ueNodes.Get(i)); // First 6 UEs in Group 1
       } else {
           ueGroup2.Add(ueNodes.Get(i)); // Remaining 6 UEs in Group 2
       }
   }
-//
-  // Assign good channel model to Group 1
-  for (uint32_t i = 0; i < ueGroup1.GetN(); ++i) {
-      Ptr<Node> node = ueGroup1.Get(i);
-      if (node->GetNDevices() > 0) {
-          Ptr<NetDevice> ueDevice = node->GetDevice(0);
-          Ptr<MmWaveUeNetDevice> mmWaveUeDevice = ueDevice->GetObject<MmWaveUeNetDevice>();
-          if (mmWaveUeDevice) {
-              mmWaveUeDevice->GetPhy()->AddPropagationLossModel(goodChannelModel);
-          }
-      } else {
-          NS_LOG_ERROR("Node " << node->GetId() << " has no devices.");
-      }
-  }
-  
- //  // Assign bad channel model to Group 2
- //  for (uint32_t i = 0; i < ueGroup2.GetN(); ++i) {
- //      Ptr<Node> node = ueGroup2.Get(i);
- //      if (node->GetNDevices() > 0) {
- //          Ptr<NetDevice> ueDevice = node->GetDevice(0);
- //          Ptr<MmWaveUeNetDevice> mmWaveUeDevice = ueDevice->GetObject<MmWaveUeNetDevice>();
- //          if (mmWaveUeDevice) {
- //              mmWaveUeDevice->GetPhy()->AddPropagationLossModel(badChannelModel);
- //          }
- //      } else {
- //          NS_LOG_ERROR("Node " << node->GetId() << " has no devices.");
- //      }
- //  }
-//
-// Assign bad channel model to Group 2
-// Assign bad channel model to Group 2
-for (uint32_t i = 0; i < ueGroup2.GetN(); ++i) {
-    Ptr<Node> node = ueGroup2.Get(i);
-    if (node->GetNDevices() > 0) {
-        Ptr<NetDevice> ueDevice = node->GetDevice(0);
-        Ptr<MmWaveUeNetDevice> mmWaveUeDevice = ueDevice->GetObject<MmWaveUeNetDevice>();
-        if (mmWaveUeDevice) {
-            // Set the bad channel model directly
-            mmWaveUeDevice->GetPhy()->AddPropagationLossModel(badChannelModel);
-        }
-    }
-}
-//
-//
+
   allEnbNodes.Add (lteEnbNodes);
   allEnbNodes.Add (mmWaveEnbNodes);
 
@@ -556,6 +447,20 @@ for (uint32_t i = 0; i < ueGroup2.GetN(); ++i) {
       enbPositionAlloc->Add (Vector (centerPosition.x + x, centerPosition.y + y, 3));
     }
   //
+  //
+// Assign a bad channel model to Group 2
+  Ptr<LogDistancePropagationLossModel> badChannelModel = CreateObject<LogDistancePropagationLossModel>();
+  badChannelModel->SetAttribute("Exponent", DoubleValue(0.0)); // Higher path loss exponent
+
+  for (uint32_t i = 0; i < ueGroup2.GetN(); ++i) {
+      Ptr<NetDevice> ueDevice = ueGroup2.Get(i)->GetDevice(0);
+      Ptr<MmWaveUeNetDevice> mmWaveUeDevice = ueDevice->GetObject<MmWaveUeNetDevice>();
+      if (mmWaveUeDevice) {
+          mmWaveUeDevice->GetPhy()->AddPropagationLossModel(badChannelModel);
+      }
+  }
+ //
+ //
  //
   MobilityHelper enbmobility;
   enbmobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -570,8 +475,8 @@ for (uint32_t i = 0; i < ueGroup2.GetN(); ++i) {
   uePositionAlloc->SetY (centerPosition.y);
   uePositionAlloc->SetRho (isd);
   Ptr<UniformRandomVariable> speed = CreateObject<UniformRandomVariable> ();
-  speed->SetAttribute ("Min", DoubleValue (0.1));
-  speed->SetAttribute ("Max", DoubleValue (0.2));
+  speed->SetAttribute ("Min", DoubleValue (2.0));
+  speed->SetAttribute ("Max", DoubleValue (4.0));
 
   uemobility.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
                                PointerValue (speed), "Bounds",
@@ -705,4 +610,3 @@ for (uint32_t i = 0; i < clientApp.GetN(); ++i) {
   NS_LOG_INFO ("Done.");
   return 0;
 }
-
