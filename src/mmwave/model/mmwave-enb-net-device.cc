@@ -183,7 +183,7 @@ MmWaveEnbNetDevice::MmWaveEnbNetDevice ()
 // m_Earfcn(1),
   : m_componentCarrierManager (0),
     m_isConfigured (false),
-    m_currentPLE(4.0),
+    m_currentPLE(6.0),
     m_isReportingEnabled (false),
     m_reducedPmValues (false),
     m_forceE2FileLogging (false),
@@ -589,7 +589,7 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
   double perUserAverageLatencySum = 0;
 
   std::unordered_map<uint64_t, std::string> uePmString {};
-
+  int anomaly;
   for (auto ue : ueMap)
   {
     uint64_t imsi = ue.second->GetImsi();
@@ -629,7 +629,9 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
     double pdcpThroughput = m_e2PdcpStatsCalculator->GetDlTxData(imsi, 3) * 8 / 1e3; // in kbit, not byte
    // double pdcpThroughput = txBytes / m_e2Periodicity; // unit kbps
     double pdcpThroughputRx = rxBytes / m_e2Periodicity; // unit kbps
-    
+   //
+    anomaly = (pdcpThroughput < 3500) ? 1 : 0;
+   //
     if (m_drbThrDlPdcpBasedComputationUeid.find (imsi) != m_drbThrDlPdcpBasedComputationUeid.end ())
     {
       m_drbThrDlPdcpBasedComputationUeid.at (imsi) += pdcpThroughputRx; 
@@ -711,7 +713,7 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageCuUp(std::string plmId)
 
           auto uePms = uePmString.find (imsi)->second;
 	  //double pdcpThroughput = m_e2PdcpStatsCalculator->GetDlTxData(imsi, 3) * 8 / 1e3; // in kbit, not byte
-	  int anomaly = (m_drbThrDlUeid [imsi] < 3500) ? 1 : 0;
+	  //int anomaly = (m_drbThrDlUeid [imsi] < 3500) ? 1 : 0;
 
 	  //
          // double sinrThisCell = 10 * std::log10 (m_l3sinrMap[imsi][m_cellId]);

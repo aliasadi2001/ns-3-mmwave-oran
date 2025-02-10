@@ -170,7 +170,7 @@ void UpdatePLE() {
     }
  
      // Schedule the next PLE update
-    Simulator::Schedule(Seconds(2), &UpdatePLE);
+    Simulator::Schedule(Seconds(10), &UpdatePLE);
 }
  ////
  //void UpdatePLE() {
@@ -227,7 +227,7 @@ static ns3::GlobalValue
 static ns3::GlobalValue
     g_indicationPeriodicity ("indicationPeriodicity",
                              "E2 Indication Periodicity reports (value in seconds)",
-                             ns3::DoubleValue (0.01), ns3::MakeDoubleChecker<double> (0.01, 2.0));
+                             ns3::DoubleValue (0.1), ns3::MakeDoubleChecker<double> (0.01, 2.0));
 
 static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (21),
                                    ns3::MakeDoubleChecker<double> (0.1, 1000.0));
@@ -419,9 +419,9 @@ main (int argc, char *argv[])
   //
   pleRng = CreateObject<UniformRandomVariable>();  
   pleRng->SetAttribute("Min", DoubleValue(2.0)); // Minimum PLE
-  pleRng->SetAttribute("Max", DoubleValue(6.0)); // Maximum PLE
+  pleRng->SetAttribute("Max", DoubleValue(2.01)); // Maximum PLE
   badChannelModel = CreateObject<LogDistancePropagationLossModel>();
-  badChannelModel->SetAttribute("Exponent", DoubleValue(4.0)); // Higher path loss exponent
+  badChannelModel->SetAttribute("Exponent", DoubleValue(6.0)); // Higher path loss exponent
   //
   Ptr<ThreeGppUmiStreetCanyonPropagationLossModel> goodChannelModel = CreateObject<ThreeGppUmiStreetCanyonPropagationLossModel>();						 //
   Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
@@ -430,7 +430,7 @@ main (int argc, char *argv[])
 
   
   //
-  Simulator::Schedule(Seconds(2), &UpdatePLE); // Start updating PLE after 1 second
+  Simulator::Schedule(Seconds(10), &UpdatePLE); // Start updating PLE after 1 second
   //
   Ptr<MmWavePointToPointEpcHelper> epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
   mmwaveHelper->SetEpcHelper (epcHelper);
@@ -482,7 +482,7 @@ main (int argc, char *argv[])
   NodeContainer ueGroup2;
 
   for (uint32_t i = 0; i < ueNodes.GetN(); ++i) {
-      if (i < 2) {
+      if (i < 4) {
           ueGroup1.Add(ueNodes.Get(i)); // First 6 UEs in Group 1
       } else {
           ueGroup2.Add(ueNodes.Get(i)); // Remaining 6 UEs in Group 2
