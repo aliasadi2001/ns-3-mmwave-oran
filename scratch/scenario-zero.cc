@@ -170,7 +170,7 @@ void UpdatePLE() {
     }
  
      // Schedule the next PLE update
-    Simulator::Schedule(Seconds(5), &UpdatePLE);
+    Simulator::Schedule(Seconds(2), &UpdatePLE);
 }
  ////
  //void UpdatePLE() {
@@ -227,10 +227,10 @@ static ns3::GlobalValue
 static ns3::GlobalValue
     g_indicationPeriodicity ("indicationPeriodicity",
                              "E2 Indication Periodicity reports (value in seconds)",
-                             ns3::DoubleValue (0.1), ns3::MakeDoubleChecker<double> (0.01, 2.0));
+                             ns3::DoubleValue (0.01), ns3::MakeDoubleChecker<double> (0.01, 2.0));
 
-static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (20),
-                                   ns3::MakeDoubleChecker<double> (0.1, 100.0));
+static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (21),
+                                   ns3::MakeDoubleChecker<double> (0.1, 1000.0));
 
 static ns3::GlobalValue g_outageThreshold ("outageThreshold",
                                            "SNR threshold for outage events [dB]", // use -1000.0 with NoAuto
@@ -430,14 +430,14 @@ main (int argc, char *argv[])
 
   
   //
-  Simulator::Schedule(Seconds(5), &UpdatePLE); // Start updating PLE after 1 second
+  Simulator::Schedule(Seconds(2), &UpdatePLE); // Start updating PLE after 1 second
   //
   Ptr<MmWavePointToPointEpcHelper> epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
   mmwaveHelper->SetEpcHelper (epcHelper);
 
   uint8_t nMmWaveEnbNodes = 4;
   uint8_t nLteEnbNodes = 1;
-  uint32_t ues = 1;
+  uint32_t ues = 2;
   uint8_t nUeNodes = ues * nMmWaveEnbNodes;
 
   NS_LOG_INFO (" Bandwidth " << bandwidth << " centerFrequency " << double (centerFrequency)
