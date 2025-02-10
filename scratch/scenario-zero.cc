@@ -170,7 +170,7 @@ void UpdatePLE() {
     }
  
      // Schedule the next PLE update
-    Simulator::Schedule(Seconds(0.2), &UpdatePLE);
+    Simulator::Schedule(Seconds(5), &UpdatePLE);
 }
  ////
  //void UpdatePLE() {
@@ -229,7 +229,7 @@ static ns3::GlobalValue
                              "E2 Indication Periodicity reports (value in seconds)",
                              ns3::DoubleValue (0.1), ns3::MakeDoubleChecker<double> (0.01, 2.0));
 
-static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (2),
+static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (20),
                                    ns3::MakeDoubleChecker<double> (0.1, 100.0));
 
 static ns3::GlobalValue g_outageThreshold ("outageThreshold",
@@ -430,14 +430,14 @@ main (int argc, char *argv[])
 
   
   //
-  Simulator::Schedule(Seconds(0.2), &UpdatePLE); // Start updating PLE after 1 second
+  Simulator::Schedule(Seconds(5), &UpdatePLE); // Start updating PLE after 1 second
   //
   Ptr<MmWavePointToPointEpcHelper> epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
   mmwaveHelper->SetEpcHelper (epcHelper);
 
   uint8_t nMmWaveEnbNodes = 4;
   uint8_t nLteEnbNodes = 1;
-  uint32_t ues = 12;
+  uint32_t ues = 1;
   uint8_t nUeNodes = ues * nMmWaveEnbNodes;
 
   NS_LOG_INFO (" Bandwidth " << bandwidth << " centerFrequency " << double (centerFrequency)
@@ -482,7 +482,7 @@ main (int argc, char *argv[])
   NodeContainer ueGroup2;
 
   for (uint32_t i = 0; i < ueNodes.GetN(); ++i) {
-      if (i < 24) {
+      if (i < 2) {
           ueGroup1.Add(ueNodes.Get(i)); // First 6 UEs in Group 1
       } else {
           ueGroup2.Add(ueNodes.Get(i)); // Remaining 6 UEs in Group 2
