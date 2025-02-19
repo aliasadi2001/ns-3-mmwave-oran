@@ -373,6 +373,9 @@ Ipv4AddressGeneratorImpl::AddAllocated (const Ipv4Address address)
     {
       NS_LOG_LOGIC ("examine entry: " << Ipv4Address ((*i).addrLow) << 
                     " to " << Ipv4Address ((*i).addrHigh));
+      NS_LOG_LOGIC("Checking range: " << Ipv4Address((*i).addrLow) <<
+                    " - " << Ipv4Address((*i).addrHigh));
+    // Log the addrLow and addrHigh values for debugging
 //
 // First things first.  Is there an address collision -- that is, does the
 // new address fall in a previously allocated block of addresses.
@@ -382,7 +385,7 @@ Ipv4AddressGeneratorImpl::AddAllocated (const Ipv4Address address)
           NS_LOG_LOGIC ("Ipv4AddressGeneratorImpl::Add(): Address Collision: " << Ipv4Address (addr)); 
           if (!m_test) 
             {
-              NS_FATAL_ERROR ("Ipv4AddressGeneratorImpl::Add(): Address Collision: " << Ipv4Address (addr));
+              NS_FATAL_ERROR ("Ipv4AddressGeneratorImpl::Add(): Address Collision: " << Ipv4Address (addr) << "---" << Ipv4Address ((*i).addrLow) << " -----" << Ipv4Address ((*i).addrHigh));
             }
           return false;
         }
