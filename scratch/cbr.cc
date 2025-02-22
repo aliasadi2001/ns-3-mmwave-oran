@@ -165,9 +165,9 @@ static ns3::GlobalValue
 static ns3::GlobalValue
     g_indicationPeriodicity ("indicationPeriodicity",
                              "E2 Indication Periodicity reports (value in seconds)",
-                             ns3::DoubleValue (0.01), ns3::MakeDoubleChecker<double> (0.01, 2.0));
+                             ns3::DoubleValue (0.1), ns3::MakeDoubleChecker<double> (0.01, 2.0));
 
-static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (4.0),
+static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (2),
                                    ns3::MakeDoubleChecker<double> (0.1, 100.0));
 
 static ns3::GlobalValue g_outageThreshold ("outageThreshold",
@@ -350,13 +350,9 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWaveNetDevice::AntennaNum", UintegerValue (numAntennasMmWave));
   Config::SetDefault ("ns3::MmWavePhyMacCommon::Bandwidth", DoubleValue (bandwidth));
   Config::SetDefault ("ns3::MmWavePhyMacCommon::CenterFreq", DoubleValue (centerFrequency));
-  //
-  Config::SetDefault ("ns3::LogDistancePropagationLossModel::Exponent", DoubleValue (3.8)); // Set the path loss exponent
-  Config::SetDefault ("ns3::LogDistancePropagationLossModel::ReferenceDistance", DoubleValue (1)); // Reference distance in meters
-  Config::SetDefault ("ns3::LogDistancePropagationLossModel::ReferenceLoss", DoubleValue (5)); // Path loss at reference distance in dB
-  //
+
   Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
-  mmwaveHelper->SetPathlossModelType ("ns3::LogDistancePropagationLossModel");
+  mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmiStreetCanyonPropagationLossModel");
   mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmiStreetCanyonChannelConditionModel");
 
   Ptr<MmWavePointToPointEpcHelper> epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
@@ -364,7 +360,7 @@ main (int argc, char *argv[])
 
   uint8_t nMmWaveEnbNodes = 4;
   uint8_t nLteEnbNodes = 1;
-  uint32_t ues = 7;
+  uint32_t ues = 3;
   uint8_t nUeNodes = ues * nMmWaveEnbNodes;
 
   NS_LOG_INFO (" Bandwidth " << bandwidth << " centerFrequency " << double (centerFrequency)
@@ -433,38 +429,20 @@ main (int argc, char *argv[])
   enbmobility.SetPositionAllocator (enbPositionAlloc);
   enbmobility.Install (allEnbNodes);
 
-//
-  uint32_t numRows = 4;       // Number of rows in the rectangle
-  uint32_t numCols = 7;       // Number of columns in the rectangle
-  double spacingX = 500.0;    // Spacing between UEs in the X direction (meters)
-  double spacingY = 850.0;    // Spacing between UEs in the Y direction (meters)
-
-  // Create a GridPositionAllocator for the rectangular constellation
-  Ptr<GridPositionAllocator> uePositionAlloc = CreateObject<GridPositionAllocator> ();
-  uePositionAlloc->SetAttribute ("GridWidth", UintegerValue (numCols));
-  uePositionAlloc->SetAttribute ("MinX", DoubleValue (centerPosition.x - (numCols - 1) * spacingX / 2));
-  uePositionAlloc->SetAttribute ("MinY", DoubleValue (centerPosition.y - (numRows - 1) * spacingY / 2));
-  uePositionAlloc->SetAttribute ("DeltaX", DoubleValue (spacingX));
-  uePositionAlloc->SetAttribute ("DeltaY", DoubleValue (spacingY));
-  uePositionAlloc->SetAttribute ("LayoutType", StringValue ("RowFirst"));
-
-//
-
   MobilityHelper uemobility;
-  uemobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
-//  Ptr<UniformDiscPositionAllocator> uePositionAlloc = CreateObject<UniformDiscPositionAllocator> ();
-//
-//  uePositionAlloc->SetX (centerPosition.x);
-//  uePositionAlloc->SetY (centerPosition.y);
-//  uePositionAlloc->SetRho (isd);
-//  Ptr<UniformRandomVariable> speed = CreateObject<UniformRandomVariable> ();
-//  speed->SetAttribute ("Min", DoubleValue (2.0));
-//  speed->SetAttribute ("Max", DoubleValue (4.0));
-//
-//  uemobility.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
-//                               PointerValue (speed), "Bounds",
-//                               RectangleValue (Rectangle (0, maxXAxis, 0, maxYAxis)));
+  Ptr<UniformDiscPositionAllocator> uePositionAlloc = CreateObject<UniformDiscPositionAllocator> ();
+
+  uePositionAlloc->SetX (centerPosition.x);
+  uePositionAlloc->SetY (centerPosition.y);
+  uePositionAlloc->SetRho (isd);
+  Ptr<UniformRandomVariable> speed = CreateObject<UniformRandomVariable> ();
+  speed->SetAttribute ("Min", DoubleValue (2.0));
+  speed->SetAttribute ("Max", DoubleValue (4.0));
+
+  uemobility.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
+                               PointerValue (speed), "Bounds",
+                               RectangleValue (Rectangle (0, maxXAxis, 0, maxYAxis)));
   uemobility.SetPositionAllocator (uePositionAlloc);
   uemobility.Install (ueNodes);
 
@@ -505,18 +483,17 @@ main (int argc, char *argv[])
   sinkApp.Add (sinkHelperUdp.Install (remoteHost));
 
   ApplicationContainer clientApp;
+  uint32_t dataRate = 1000000; // 1 Mbps
 
   for (uint32_t u = 0; u < ueNodes.GetN (); ++u)
     {
-      // Full traffic
-      PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory",
-                                           InetSocketAddress (Ipv4Address::GetAny (), 1234));
-      sinkApp.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
-      UdpClientHelper dlClient (ueIpIface.GetAddress (u), 1234);
-      dlClient.SetAttribute ("Interval", TimeValue (MicroSeconds (500)));
-      dlClient.SetAttribute ("MaxPackets", UintegerValue (UINT32_MAX));
-      dlClient.SetAttribute ("PacketSize", UintegerValue (1280));
-      clientApp.Add (dlClient.Install (remoteHost));
+      OnOffHelper onoff ("ns3::UdpSocketFactory", 
+                         InetSocketAddress (ueIpIface.GetAddress (u), 1234));
+      onoff.SetConstantRate (DataRate (dataRate));
+      onoff.SetAttribute ("PacketSize", UintegerValue (1000));
+      onoff.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+      onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+      clientApp.Add (onoff.Install (remoteHost));
     }
 
   // Start applications

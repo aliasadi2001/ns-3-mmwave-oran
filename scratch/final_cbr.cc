@@ -505,18 +505,19 @@ main (int argc, char *argv[])
   sinkApp.Add (sinkHelperUdp.Install (remoteHost));
 
   ApplicationContainer clientApp;
+  uint32_t dataRate = 5000000; // 1 Mbps
 
   for (uint32_t u = 0; u < ueNodes.GetN (); ++u)
     {
       // Full traffic
-      PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory",
-                                           InetSocketAddress (Ipv4Address::GetAny (), 1234));
-      sinkApp.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
-      UdpClientHelper dlClient (ueIpIface.GetAddress (u), 1234);
-      dlClient.SetAttribute ("Interval", TimeValue (MicroSeconds (500)));
-      dlClient.SetAttribute ("MaxPackets", UintegerValue (UINT32_MAX));
-      dlClient.SetAttribute ("PacketSize", UintegerValue (1280));
-      clientApp.Add (dlClient.Install (remoteHost));
+      OnOffHelper onoff ("ns3::UdpSocketFactory",
+                         InetSocketAddress (ueIpIface.GetAddress (u), 1234));
+      onoff.SetConstantRate (DataRate (dataRate));
+      onoff.SetAttribute ("PacketSize", UintegerValue (1000));
+      onoff.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+      onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+      clientApp.Add (onoff.Install (remoteHost));
+
     }
 
   // Start applications
