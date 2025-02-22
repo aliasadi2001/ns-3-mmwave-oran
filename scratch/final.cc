@@ -167,7 +167,7 @@ static ns3::GlobalValue
                              "E2 Indication Periodicity reports (value in seconds)",
                              ns3::DoubleValue (0.01), ns3::MakeDoubleChecker<double> (0.01, 2.0));
 
-static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (4.0),
+static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (0.3),
                                    ns3::MakeDoubleChecker<double> (0.1, 100.0));
 
 static ns3::GlobalValue g_outageThreshold ("outageThreshold",
@@ -433,20 +433,38 @@ main (int argc, char *argv[])
   enbmobility.SetPositionAllocator (enbPositionAlloc);
   enbmobility.Install (allEnbNodes);
 
+//
+  uint32_t numRows = 4;       // Number of rows in the rectangle
+  uint32_t numCols = 7;       // Number of columns in the rectangle
+  double spacingX = 500.0;    // Spacing between UEs in the X direction (meters)
+  double spacingY = 500.0;    // Spacing between UEs in the Y direction (meters)
+
+  // Create a GridPositionAllocator for the rectangular constellation
+  Ptr<GridPositionAllocator> uePositionAlloc = CreateObject<GridPositionAllocator> ();
+  uePositionAlloc->SetAttribute ("GridWidth", UintegerValue (numCols));
+  uePositionAlloc->SetAttribute ("MinX", DoubleValue (centerPosition.x - (numCols - 1) * spacingX / 2));
+  uePositionAlloc->SetAttribute ("MinY", DoubleValue (centerPosition.y - (numRows - 1) * spacingY / 2));
+  uePositionAlloc->SetAttribute ("DeltaX", DoubleValue (spacingX));
+  uePositionAlloc->SetAttribute ("DeltaY", DoubleValue (spacingY));
+  uePositionAlloc->SetAttribute ("LayoutType", StringValue ("RowFirst"));
+
+//
+
   MobilityHelper uemobility;
+  uemobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
-  Ptr<UniformDiscPositionAllocator> uePositionAlloc = CreateObject<UniformDiscPositionAllocator> ();
-
-  uePositionAlloc->SetX (centerPosition.x);
-  uePositionAlloc->SetY (centerPosition.y);
-  uePositionAlloc->SetRho (isd);
-  Ptr<UniformRandomVariable> speed = CreateObject<UniformRandomVariable> ();
-  speed->SetAttribute ("Min", DoubleValue (2.0));
-  speed->SetAttribute ("Max", DoubleValue (4.0));
-
-  uemobility.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
-                               PointerValue (speed), "Bounds",
-                               RectangleValue (Rectangle (0, maxXAxis, 0, maxYAxis)));
+//  Ptr<UniformDiscPositionAllocator> uePositionAlloc = CreateObject<UniformDiscPositionAllocator> ();
+//
+//  uePositionAlloc->SetX (centerPosition.x);
+//  uePositionAlloc->SetY (centerPosition.y);
+//  uePositionAlloc->SetRho (isd);
+//  Ptr<UniformRandomVariable> speed = CreateObject<UniformRandomVariable> ();
+//  speed->SetAttribute ("Min", DoubleValue (2.0));
+//  speed->SetAttribute ("Max", DoubleValue (4.0));
+//
+//  uemobility.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
+//                               PointerValue (speed), "Bounds",
+//                               RectangleValue (Rectangle (0, maxXAxis, 0, maxYAxis)));
   uemobility.SetPositionAllocator (uePositionAlloc);
   uemobility.Install (ueNodes);
 
