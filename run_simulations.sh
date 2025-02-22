@@ -4,7 +4,7 @@
 EXPONENT_VALUES=(3.1 3.9 3.8)
 REFERENCE_LOSS_VALUES=(5 10 5)
 DATA_DIR="datafiles"
-FINAL_CC="scratch/final.cc"
+FINAL_CC="scratch/final_cbr.cc"
 
 # Ensure the data directory exists
 mkdir -p $DATA_DIR
